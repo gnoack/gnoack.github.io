@@ -1,0 +1,43 @@
+# Based on
+# https://gohugo.io/hosting-and-deployment/hosting-on-github/
+name: Deploy the markdown page
+on:
+  # Automatically run when pushes to main
+  push:
+    branches:
+      - main
+  # Let us run it from the actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.22'
+      - name: Render all markdown
+        run: |
+          mkdir bin
+          GOBIN=$PWD/bin go install github.com/gnoack/ukuleleweb/cmd/wikirender@latest
+          PATH="$PWD/bin:$PATH" make page
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
